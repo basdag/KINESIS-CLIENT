@@ -197,7 +197,13 @@ ConsumerCluster.prototype.fetchAvailableShard = function () {
       var awsConfig = _this.opts.awsConfig
       var localDynamo = !!_this.opts.localDynamo
       models.Lease.fetchAll(tableName, awsConfig, localDynamo, function (err, leases) {
-        if (err) return done(err)
+        if (err) {
+          _this.logger.info(awsConfig, 'AWS')
+          _this.logger.info(localDynamo, 'Dynamo')
+          _this.logger.info(tableName, 'Table')
+
+          return done(err)
+        }
 
         return done(null, leases.Items)
       })
