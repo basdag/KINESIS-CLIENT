@@ -98,8 +98,14 @@ AbstractConsumer.prototype.init = function () {
       return _this._exit(err)
     }
 
-    _this._loopGetRecords()
-    _this._loopReserveLease()
+    try {
+      _this._loopGetRecords()
+      _this._loopReserveLease()
+    } catch (exp) {
+      _this.logger.error(exp)
+
+      return _this._exit(exp)
+    }
   })
 }
 
@@ -224,7 +230,7 @@ AbstractConsumer.prototype._getRecords = function (callback) {
     }
 
     // We have processed all the data from a closed stream
-    if (data.NextShardIterator == null && data.Records.length === 0) {
+    if (null === data.NextShardIterator && (!data.Records || 0 === data.Records.length)) {
       return _this._markFinished()
     }
 
@@ -349,9 +355,9 @@ AbstractConsumer.prototype._exit = function (err) {
 
   setTimeout(function () {
     _this.logger.error('Forcing exit based on shutdown timeout')
-    // Exiting with 1 because the shutdown process took too long
+    // Exiting in 60 seconds with 1 because the shutdown process took too long
     process.exit(1)
-  }, 30000)
+  }, 60000)
 
   this.log('Starting shutdown')
   this.shutdown(function () {

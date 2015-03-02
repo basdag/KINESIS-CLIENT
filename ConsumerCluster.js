@@ -310,15 +310,15 @@ ConsumerCluster.prototype._killConsumer = function (consumerId, callback) {
   this.logger.info({id: id}, 'Killing consumer')
   this.consumers[id].send(config.shutdownMessage)
 
-  // Kills consumer in 40 seconds, giving it enough time to consumer's shut down process
-  // to finish
+  // Kills consumer in 70 seconds, giving it enough time to consumer's shut down
+  // process - 60 seconds - to finish
   setTimeout(function () {
     if (this.consumers[id]) {
       this.consumers[id].kill()
 
       if (callback) return callback()
     }
-  }.bind(this), 40000).unref()
+  }.bind(this), 70000).unref()
 }
 
 /**
