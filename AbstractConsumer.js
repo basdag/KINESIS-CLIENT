@@ -84,7 +84,11 @@ AbstractConsumer.prototype.init = function () {
     _this._reserveLease.bind(_this),
     function (done) {
       _this.lease.getCheckpoint(function (err, checkpoint) {
-        if (err) return done(err)
+        if (err) {
+          _this.logger.error(err, 'Error getting lease checkpoint')
+
+          return done(err)
+        }
 
         _this.log({checkpoint: checkpoint}, 'Got starting checkpoint')
         _this.maxSequenceNumber = checkpoint
@@ -95,6 +99,8 @@ AbstractConsumer.prototype.init = function () {
     _this.initialize.bind(_this)
   ], function (err) {
     if (err) {
+      _this.logger.error(err, 'Error initializing consumer')
+
       return _this._exit(err)
     }
 
@@ -129,7 +135,11 @@ AbstractConsumer.prototype._loopGetRecords = function () {
     var gotRecordsAt = Date.now()
 
     _this._getRecords(function (err) {
-      if (err) return done(err)
+      if (err) {
+        _this.logger.error(err, 'Error getting records')
+
+        return done(err)
+      }
 
       var timeToWait = Math.max(0, maxCallFrequency - (Date.now() - gotRecordsAt))
 
@@ -140,6 +150,8 @@ AbstractConsumer.prototype._loopGetRecords = function () {
       }
     })
   }, function (err) {
+    _this.logger.error(err, 'Error looping records')
+
     _this._exit(err)
   })
 }
@@ -155,6 +167,8 @@ AbstractConsumer.prototype._loopReserveLease = function () {
   async.forever(function (done) {
     setTimeout(_this._reserveLease.bind(_this, done), 5000)
   }, function (err) {
+    _this.logger.error(err, 'Error looping reserve leases')
+
     _this._exit(err)
   })
 }
@@ -192,6 +206,8 @@ AbstractConsumer.prototype._markFinished = function () {
   this.log('Marking shard as finished')
 
   this.lease.markFinished(function (err) {
+    _this.logger.error(err, 'Error marking shard as finished')
+
     _this._exit(err)
   })
 }
@@ -208,7 +224,11 @@ AbstractConsumer.prototype._getRecords = function (callback) {
     if (err && err.code === 'ExpiredIteratorException') {
       _this.log('Shard iterator expired, updating before next getRecords call')
       return _this._updateShardIterator(_this.maxSequenceNumber, function (err) {
-        if (err) return callback(err)
+        if (err) {
+          _this.logger.error(err, 'Error updating shard iterator')
+
+          return callback(err)
+        }
 
         _this._getRecords(callback)
       })
@@ -222,7 +242,11 @@ AbstractConsumer.prototype._getRecords = function (callback) {
     }
 
     // We have an error but don't know how to handle it
-    if (err) return callback(err)
+    if (err) {
+      _this.logger.error(err, 'Error getting records from kinesis')
+
+      return callback(err)
+    }
 
     // Save this in case we need to checkpoint it in a future request before we get more records
     if (data.NextShardIterator != null) {
@@ -250,7 +274,11 @@ AbstractConsumer.prototype._getRecords = function (callback) {
 AbstractConsumer.prototype._processRecords = function (records, callback) {
   var _this = this
   this.processRecords(records, function (err, checkpointSequenceNumber) {
-    if (err) return callback(err)
+    if (err) {
+      _this.logger.error(err, 'Error processing records')
+
+      return callback(err)
+    }
 
     // Don't checkpoint
     if (! checkpointSequenceNumber) return callback()
@@ -296,6 +324,8 @@ AbstractConsumer.prototype.initialize = function (callback) {
  * @param {processRecordsCallback} callback
  */
 AbstractConsumer.prototype.processRecords = function (callback) {
+  _this.logger.error('Error processRecords must be defined by the consumer class')
+
   throw new Error('processRecords must be defined by the consumer class')
 }
 
@@ -329,7 +359,11 @@ AbstractConsumer.prototype._updateShardIterator = function (sequenceNumber, call
 
   this.log({iteratorType: type, sequenceNumber: sequenceNumber}, 'Updating shard iterator')
   kinesis.getShardIterator(this.client, this.streamName, this.shardId, type, sequenceNumber, function (err, data) {
-    if (err) return callback(err)
+    if (err) {
+      _this.logger.error('Error updating shard iterator')
+
+      return callback(err)
+    }
 
     _this.log(data, 'Updated shard iterator')
     _this.nextShardIterator = data.ShardIterator
