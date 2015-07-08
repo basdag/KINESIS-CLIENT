@@ -85,9 +85,7 @@ AbstractConsumer.prototype.init = function () {
     function (done) {
       _this.lease.getCheckpoint(function (err, checkpoint) {
         if (err) {
-          _this.logger.error(err, 'Error getting lease checkpoint')
-
-          return done(err)
+          return done('Error getting lease checkpoint - ' + err)
         }
 
         _this.log({checkpoint: checkpoint}, 'Got starting checkpoint')
@@ -136,9 +134,7 @@ AbstractConsumer.prototype._loopGetRecords = function () {
 
     _this._getRecords(function (err) {
       if (err) {
-        _this.logger.error(err, 'Error getting records')
-
-        return done(err)
+        return done('Error getting records - ' + err)
       }
 
       var timeToWait = Math.max(0, maxCallFrequency - (Date.now() - gotRecordsAt))
@@ -225,9 +221,7 @@ AbstractConsumer.prototype._getRecords = function (callback) {
       _this.log('Shard iterator expired, updating before next getRecords call')
       return _this._updateShardIterator(_this.maxSequenceNumber, function (err) {
         if (err) {
-          _this.logger.error(err, 'Error updating shard iterator')
-
-          return callback(err)
+          return callback('Error updating shard iterator - ' + err)
         }
 
         _this._getRecords(callback)
@@ -243,9 +237,7 @@ AbstractConsumer.prototype._getRecords = function (callback) {
 
     // We have an error but don't know how to handle it
     if (err) {
-      _this.logger.error(err, 'Error getting records from kinesis')
-
-      return callback(err)
+      return callback('Error getting records from kinesis - ' + err)
     }
 
     // Save this in case we need to checkpoint it in a future request before we get more records
@@ -275,9 +267,7 @@ AbstractConsumer.prototype._processRecords = function (records, callback) {
   var _this = this
   this.processRecords(records, function (err, checkpointSequenceNumber) {
     if (err) {
-      _this.logger.error(err, 'Error processing records')
-
-      return callback(err)
+      return callback('Error processing records - ' + err)
     }
 
     // Don't checkpoint
@@ -360,9 +350,7 @@ AbstractConsumer.prototype._updateShardIterator = function (sequenceNumber, call
   this.log({iteratorType: type, sequenceNumber: sequenceNumber}, 'Updating shard iterator')
   kinesis.getShardIterator(this.client, this.streamName, this.shardId, type, sequenceNumber, function (err, data) {
     if (err) {
-      _this.logger.error('Error updating shard iterator')
-
-      return callback(err)
+      return callback('Error updating shard iterator - ' + err)
     }
 
     _this.log(data, 'Updated shard iterator')

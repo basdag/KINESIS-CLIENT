@@ -187,9 +187,7 @@ ConsumerCluster.prototype.fetchAvailableShard = function () {
     allShardIds: function (done) {
       kinesis.listShards(_this.client, _this.opts.streamName, function (err, shards) {
         if (err) {
-          _this.logger.error(err, 'Error listing shards')
-
-          return done(err)
+          return done('Error listing shards - ' + err)
         }
 
         var shardIds = _.pluck(shards, 'ShardId')
@@ -205,9 +203,8 @@ ConsumerCluster.prototype.fetchAvailableShard = function () {
           _this.logger.info(awsConfig, 'AWS')
           _this.logger.info(localDynamo, 'Dynamo')
           _this.logger.info(tableName, 'Table')
-          _this.logger.error(err, 'Error fetching leases')
 
-          return done(err)
+          return done('Error fetching leases - ' + err)
         }
 
         return done(null, leases.Items)
@@ -361,9 +358,7 @@ ConsumerCluster.prototype._loopFetchExternalNetwork = function () {
   function fetchThenWait(done) {
     _this._fetchExternalNetwork(function (err) {
       if (err) {
-        _this.logger.error(err, 'Error lopping external networks')
-
-        return done(err)
+        return done('Error lopping external networks - ' + err)
       }
 
       setTimeout(done, 5000)
@@ -371,7 +366,9 @@ ConsumerCluster.prototype._loopFetchExternalNetwork = function () {
   }
 
   function handleError(err) {
-    _this.logger.error(err, 'Error fetching external network data')
+    if (err) {
+      _this.logger.error(err, 'Error fetching external network data')
+    }
   }
 
   async.forever(fetchThenWait, handleError)
@@ -386,9 +383,7 @@ ConsumerCluster.prototype._fetchExternalNetwork = function (callback) {
 
   this.cluster.fetchAll(function (err, clusters) {
     if (err) {
-      _this.logger.error(err, 'Error fetching external networks')
-
-      return callback(err)
+      return callback('Error fetching external networks - ' + err)
     }
 
     _this.externalNetwork = clusters.Items.filter(function (cluster) {
@@ -413,9 +408,7 @@ ConsumerCluster.prototype._loopReportClusterToNetwork = function () {
   function reportThenWait(done) {
     _this._reportClusterToNetwork(function (err) {
       if (err) {
-        _this.logger.error(err, 'Error looping report cluster to network')
-
-        return done(err)
+        return done('Error looping report cluster to network - ' + err)
       }
 
       setTimeout(done, 1000)
@@ -423,7 +416,9 @@ ConsumerCluster.prototype._loopReportClusterToNetwork = function () {
   }
 
   function handleError(err) {
-    _this.logger.error(err, 'Error reporting cluster to network')
+    if (err) {
+      _this.logger.error(err, 'Error reporting cluster to network')
+    }
   }
 
   async.forever(reportThenWait, handleError)
